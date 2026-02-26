@@ -51,6 +51,21 @@ services:
       retries: 3
       start_period: 10s
 
+  # Test service - runs unit tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library_test
+    environment:
+      NODE_ENV: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["npm", "test"]
+    profiles:
+      - test
+
 networks:
   library-network:
     driver: bridge
