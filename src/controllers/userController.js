@@ -1,9 +1,11 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { successResponse, errorResponse } = require('../utils/responseHelper');
+const logger = require('../utils/logger');
 
 /**
  * Register a new user
- * POST /api/auth/register
+ * POST /api/v1/auth/register
  */
 const register = async (req, res, next) => {
   try {
@@ -31,8 +33,10 @@ const register = async (req, res, next) => {
     // Check if email already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(409).json({
-        error: 'Email already registered',
+      logger.warn('Registration attempt with existing email', { email });
+      return errorResponse(res, {
+        message: 'Email already registered',
+        statusCode: 409,
       });
     }
 
@@ -51,24 +55,30 @@ const register = async (req, res, next) => {
       { expiresIn: '24h' }
     );
 
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user.id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
+    logger.info('User registered successfully', { userId: user.id, email: user.email });
+
+    return successResponse(res, {
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+        },
       },
+      message: 'User registered successfully',
+      statusCode: 201,
     });
   } catch (error) {
+    logger.error('Registration error', { error: error.message });
     next(error);
   }
 };
 
 /**
  * Login user
- * POST /api/auth/login
+ * POST /api/v1/auth/login
  */
 const login = async (req, res, next) => {
   try {
@@ -76,24 +86,29 @@ const login = async (req, res, next) => {
 
     // Validation
     if (!email || !password) {
-      return res.status(400).json({
-        error: 'Email and password are required',
+      return errorResponse(res, {
+        message: 'Email and password are required',
+        statusCode: 400,
       });
     }
 
     // Find user
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(401).json({
-        error: 'Invalid credentials',
+      logger.warn('Login attempt with non-existent email', { email });
+      return errorResponse(res, {
+        message: 'Invalid credentials',
+        statusCode: 401,
       });
     }
 
     // Compare password
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
-      return res.status(401).json({
-        error: 'Invalid credentials',
+      logger.warn('Login attempt with invalid password', { email });
+      return errorResponse(res, {
+        message: 'Invalid credentials',
+        statusCode: 401,
       });
     }
 
@@ -104,24 +119,29 @@ const login = async (req, res, next) => {
       { expiresIn: '24h' }
     );
 
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
+    logger.info('User logged in successfully', { userId: user.id, email: user.email });
+
+    return successResponse(res, {
+      data: {
+        token,
+        user: {
+          id: user.id,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+        },
       },
+      message: 'Login successful',
     });
   } catch (error) {
+    logger.error('Login error', { error: error.message });
     next(error);
   }
 };
 
 /**
  * Get current user profile
- * GET /api/auth/profile
+ * GET /api/v1/auth/profile
  */
 const getProfile = async (req, res, next) => {
   try {
@@ -130,13 +150,15 @@ const getProfile = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
+      return errorResponse(res, {
+        message: 'User not found',
+        statusCode: 404,
       });
     }
 
-    res.status(200).json({
-      user,
+    return successResponse(res, {
+      data: { user },
+      message: 'Profile retrieved successfully',
     });
   } catch (error) {
     next(error);
@@ -145,14 +167,15 @@ const getProfile = async (req, res, next) => {
 
 /**
  * Get all users (admin only)
- * GET /api/users
+ * GET /api/v1/users
  */
 const getAllUsers = async (req, res, next) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Access denied. Admin role required',
+      return errorResponse(res, {
+        message: 'Access denied. Admin role required',
+        statusCode: 403,
       });
     }
 
@@ -161,9 +184,9 @@ const getAllUsers = async (req, res, next) => {
       order: [['createdAt', 'DESC']],
     });
 
-    res.status(200).json({
-      users,
-      count: users.length,
+    return successResponse(res, {
+      data: { users, count: users.length },
+      message: 'Users retrieved successfully',
     });
   } catch (error) {
     next(error);
@@ -172,7 +195,7 @@ const getAllUsers = async (req, res, next) => {
 
 /**
  * Get user by ID
- * GET /api/users/:id
+ * GET /api/v1/users/:id
  */
 const getUserById = async (req, res, next) => {
   try {
@@ -183,13 +206,15 @@ const getUserById = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
+      return errorResponse(res, {
+        message: 'User not found',
+        statusCode: 404,
       });
     }
 
-    res.status(200).json({
-      user,
+    return successResponse(res, {
+      data: { user },
+      message: 'User retrieved successfully',
     });
   } catch (error) {
     next(error);
@@ -198,7 +223,7 @@ const getUserById = async (req, res, next) => {
 
 /**
  * Update user (admin can update any user, user can update self)
- * PUT /api/users/:id
+ * PUT /api/v1/users/:id
  */
 const updateUser = async (req, res, next) => {
   try {
@@ -207,15 +232,17 @@ const updateUser = async (req, res, next) => {
 
     // Check authorization
     if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Access denied. Can only update your own profile',
+      return errorResponse(res, {
+        message: 'Access denied. Can only update your own profile',
+        statusCode: 403,
       });
     }
 
     const user = await User.findByPk(id);
     if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
+      return errorResponse(res, {
+        message: 'User not found',
+        statusCode: 404,
       });
     }
 
@@ -229,14 +256,18 @@ const updateUser = async (req, res, next) => {
 
     await user.save();
 
-    res.status(200).json({
-      message: 'User updated successfully',
-      user: {
-        id: user.id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
+    logger.info('User updated', { userId: id, updatedBy: req.user.id });
+
+    return successResponse(res, {
+      data: {
+        user: {
+          id: user.id,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+        },
       },
+      message: 'User updated successfully',
     });
   } catch (error) {
     next(error);
@@ -245,7 +276,7 @@ const updateUser = async (req, res, next) => {
 
 /**
  * Delete user (admin only)
- * DELETE /api/users/:id
+ * DELETE /api/v1/users/:id
  */
 const deleteUser = async (req, res, next) => {
   try {
@@ -253,21 +284,26 @@ const deleteUser = async (req, res, next) => {
 
     // Check if user is admin
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Access denied. Admin role required',
+      return errorResponse(res, {
+        message: 'Access denied. Admin role required',
+        statusCode: 403,
       });
     }
 
     const user = await User.findByPk(id);
     if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
+      return errorResponse(res, {
+        message: 'User not found',
+        statusCode: 404,
       });
     }
 
     await user.destroy();
 
-    res.status(200).json({
+    logger.info('User deleted', { userId: id, deletedBy: req.user.id });
+
+    return successResponse(res, {
+      data: null,
       message: 'User deleted successfully',
     });
   } catch (error) {
