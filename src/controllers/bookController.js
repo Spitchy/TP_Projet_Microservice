@@ -1,101 +1,183 @@
 /**
  * Book Controller
- * Handles all book-related operations
+ * Handles HTTP requests for book-related operations
  */
 
+const bookService = require('../services/bookService');
+const { successResponse, paginatedResponse, errorResponse } = require('../utils/responseHelper');
+const logger = require('../utils/logger');
+
 /**
- * GET all books
+ * GET /api/v1/books
+ * Get all books with pagination and filtering
  */
-const getAllBooks = async (req, res) => {
+const getAllBooks = async (req, res, next) => {
   try {
-    // TODO: Implement logic to fetch all books
-    res.status(200).json({ message: 'Get all books' });
+    const { page, size, sort, order, titre, auteur, disponibilite } = req.query;
+    
+    const result = await bookService.getAllBooks({
+      page,
+      size,
+      sort,
+      order,
+      titre,
+      auteur,
+      disponibilite,
+    });
+
+    return paginatedResponse(res, {
+      data: result.books,
+      message: 'Books retrieved successfully',
+      pagination: result.pagination,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * GET book by ID
+ * GET /api/v1/books/:id
+ * Get book by ID
  */
-const getBookById = async (req, res) => {
+const getBookById = async (req, res, next) => {
   try {
-    // TODO: Implement logic to fetch book by ID
-    res.status(200).json({ message: 'Get book by ID' });
+    const { id } = req.params;
+    const book = await bookService.getBookById(id);
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book retrieved successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * CREATE a new book
+ * POST /api/v1/books
+ * Create a new book (authenticated)
  */
-const createBook = async (req, res) => {
+const createBook = async (req, res, next) => {
   try {
-    // TODO: Implement logic to create a new book
-    res.status(201).json({ message: 'Book created' });
+    const { titre, auteur, isbn, disponibilite } = req.body;
+    
+    const book = await bookService.createBook({
+      titre,
+      auteur,
+      isbn,
+      disponibilite,
+    });
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book created successfully',
+      statusCode: 201,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * UPDATE a book
+ * PUT /api/v1/books/:id
+ * Update a book (authenticated)
  */
-const updateBook = async (req, res) => {
+const updateBook = async (req, res, next) => {
   try {
-    // TODO: Implement logic to update a book
-    res.status(200).json({ message: 'Book updated' });
+    const { id } = req.params;
+    const { titre, auteur, isbn, disponibilite } = req.body;
+    
+    const book = await bookService.updateBook(id, {
+      titre,
+      auteur,
+      isbn,
+      disponibilite,
+    });
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book updated successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * DELETE a book
+ * DELETE /api/v1/books/:id
+ * Delete a book (authenticated)
  */
-const deleteBook = async (req, res) => {
+const deleteBook = async (req, res, next) => {
   try {
-    // TODO: Implement logic to delete a book
-    res.status(200).json({ message: 'Book deleted' });
+    const { id } = req.params;
+    const book = await bookService.deleteBook(id);
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book deleted successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * SEARCH books by title or author
+ * GET /api/v1/books/search
+ * Search books by title or author
  */
-const searchBooks = async (req, res) => {
+const searchBooks = async (req, res, next) => {
   try {
-    // TODO: Implement logic to search books by title or author
-    res.status(200).json({ message: 'Search books' });
+    const { q, page, size } = req.query;
+    
+    const result = await bookService.searchBooks({ q, page, size });
+
+    return paginatedResponse(res, {
+      data: result.books,
+      message: 'Search results retrieved successfully',
+      pagination: result.pagination,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * BORROW a book
+ * POST /api/v1/books/:id/borrow
+ * Borrow a book (authenticated)
  */
-const borrowBook = async (req, res) => {
+const borrowBook = async (req, res, next) => {
   try {
-    // TODO: Implement logic to borrow a book
-    res.status(200).json({ message: 'Book borrowed' });
+    const { id } = req.params;
+    const userId = req.user?.id;
+    
+    const book = await bookService.borrowBook(id, userId);
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book borrowed successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 /**
- * RETURN a book
+ * POST /api/v1/books/:id/return
+ * Return a book (authenticated)
  */
-const returnBook = async (req, res) => {
+const returnBook = async (req, res, next) => {
   try {
-    // TODO: Implement logic to return a book
-    res.status(200).json({ message: 'Book returned' });
+    const { id } = req.params;
+    const userId = req.user?.id;
+    
+    const book = await bookService.returnBook(id, userId);
+
+    return successResponse(res, {
+      data: book,
+      message: 'Book returned successfully',
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 

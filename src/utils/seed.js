@@ -1,11 +1,11 @@
 const sequelize = require('../config/database');
 const User = require('../models/User');
 const Livre = require('../models/Livre');
-const Emprunt = require('../models/Emprunt');
+const logger = require('./logger');
 
 const seedDatabase = async () => {
   try {
-    console.log('🌱 Starting database seeding...');
+    logger.info('Starting database seeding...');
 
     // Sample Users
     const users = await User.bulkCreate(
@@ -13,23 +13,26 @@ const seedDatabase = async () => {
         {
           nom: 'Alice Dupont',
           email: 'alice@example.com',
+          password: 'password123',
           role: 'admin',
         },
         {
           nom: 'Bob Martin',
           email: 'bob@example.com',
+          password: 'password123',
           role: 'user',
         },
         {
           nom: 'Charlie Leblanc',
           email: 'charlie@example.com',
+          password: 'password123',
           role: 'user',
         },
       ],
-      { ignoreDuplicates: true }
+      { individualHooks: true, ignoreDuplicates: true }
     );
 
-    console.log('✓ Created users');
+    logger.info('Created users');
 
     // Sample Books
     const books = await Livre.bulkCreate(
@@ -68,38 +71,12 @@ const seedDatabase = async () => {
       { ignoreDuplicates: true }
     );
 
-    console.log('✓ Created books');
-
-    // Sample Emprunts (Borrowing records)
-    const today = new Date();
-    const returnDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
-
-    const emprunts = await Emprunt.bulkCreate(
-      [
-        {
-          UserId: users[0]?.id || 1,
-          LivreId: books[0]?.id || 1,
-          dateEmprunt: today,
-          dateRetourPrevue: returnDate,
-          dateRetourEffective: null,
-        },
-        {
-          UserId: users[1]?.id || 2,
-          LivreId: books[2]?.id || 3,
-          dateEmprunt: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-          dateRetourPrevue: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
-          dateRetourEffective: today,
-        },
-      ],
-      { ignoreDuplicates: true }
-    );
-
-    console.log('✓ Created borrowing records');
-    console.log('✅ Database seeding completed successfully!\n');
+    logger.info('Created books');
+    logger.info('Database seeding completed successfully');
 
     return true;
   } catch (error) {
-    console.error('❌ Seeding error:', error.message);
+    logger.error('Seeding error', { error: error.message });
     return false;
   }
 };

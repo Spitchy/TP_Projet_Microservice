@@ -6,31 +6,33 @@ const authMiddleware = require('../middlewares/authMiddleware');
 /**
  * PUBLIC ROUTES
  */
-// GET all books
+
+// GET /api/v1/books/search - Search books (must be before /:id to avoid conflict)
+router.get('/search', bookController.searchBooks);
+
+// GET /api/v1/books - Get all books (paginated)
 router.get('/', bookController.getAllBooks);
 
-// GET book by ID
+// GET /api/v1/books/:id - Get book by ID
 router.get('/:id', bookController.getBookById);
 
-// SEARCH books
-router.get('/search/query', bookController.searchBooks);
-
 /**
- * PROTECTED ROUTES
+ * PROTECTED ROUTES (require authentication)
  */
-// CREATE a new book
+
+// POST /api/v1/books - Create a new book
 router.post('/', authMiddleware, bookController.createBook);
 
-// UPDATE a book
+// PUT /api/v1/books/:id - Update a book
 router.put('/:id', authMiddleware, bookController.updateBook);
 
-// DELETE a book
+// DELETE /api/v1/books/:id - Delete a book
 router.delete('/:id', authMiddleware, bookController.deleteBook);
 
-// BORROW a book
+// POST /api/v1/books/:id/borrow - Borrow a book
 router.post('/:id/borrow', authMiddleware, bookController.borrowBook);
 
-// RETURN a book
+// POST /api/v1/books/:id/return - Return a book
 router.post('/:id/return', authMiddleware, bookController.returnBook);
 
 module.exports = router;

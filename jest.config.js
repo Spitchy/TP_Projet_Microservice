@@ -5,10 +5,11 @@ module.exports = {
     'src/**/*.js',
     '!src/server.js',
     '!src/config/**',
+    '!src/__tests__/**',
+    '!src/utils/seed.js',
   ],
   testMatch: [
-    '**/__tests__/**/*.js',
-    '**/?(*.)+(spec|test).js',
+    '**/__tests__/**/*.test.js',
   ],
   coveragePathIgnorePatterns: [
     '/node_modules/',
@@ -17,14 +18,15 @@ module.exports = {
   // thresholds intentionally low until more tests are added
   coverageThreshold: {
     global: {
-      lines: 0,
-      functions: 0,
-      branches: 0,
-      statements: 0,
+      lines: 50,
+      functions: 35,
+      branches: 40,
+      statements: 50,
     },
   },
   testPathIgnorePatterns: [
     '/node_modules/',
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  verbose: true,
+  testTimeout: 10000,
 };
