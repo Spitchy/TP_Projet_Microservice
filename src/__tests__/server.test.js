@@ -1,5 +1,6 @@
 const request = require('supertest');
-const app = require('../src/server');
+// server.js lives in src/, tests are already inside src/__tests__
+const app = require('../server');
 
 describe('Health Check Endpoint', () => {
   it('should return status UP', async () => {

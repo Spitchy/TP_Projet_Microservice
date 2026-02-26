@@ -1,5 +1,6 @@
 /* Auth Controller Tests */
-const { register } = require('../../controllers/userController');
+// tests are located in src/__tests__, hence go up one level to reach controllers
+const { register } = require('../controllers/userController');
 
 describe('User Registration', () => {
   it('should validate required fields', async () => {

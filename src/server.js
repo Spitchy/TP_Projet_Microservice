@@ -70,6 +70,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// only auto-start when not running under test environment
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 module.exports = app;
