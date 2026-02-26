@@ -170,7 +170,7 @@ jobs:
 
       - name: Generate SBOM (CycloneDX)
         run: |
-          npm install -g @cyclonedx/npm
+          npm install -g @cyclonedx/cyclonedx-npm
           cyclonedx-npm --output-file sbom.json || true
 
       - name: Upload SBOM as artifact
