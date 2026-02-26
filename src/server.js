@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const sequelize = require('./config/database');
 const bookRoutes = require('./routes/bookRoutes');
+const authRoutes = require('./routes/authRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const seedDatabase = require('./utils/seed');
 
@@ -30,6 +31,8 @@ app.get('/metrics', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', authRoutes);
 app.use('/api/books', bookRoutes);
 
 // 404 Handler
@@ -47,8 +50,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('✓ Database connected successfully');
 
-    // Sync models with database
-    await sequelize.sync({ alter: false });
+    // Sync models with database (apply necessary alterations)
+    await sequelize.sync({ alter: true });
     console.log('✓ Models synced with database');
 
     // Seed database with initial data
