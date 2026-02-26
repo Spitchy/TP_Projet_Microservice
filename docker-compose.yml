@@ -27,7 +27,7 @@ services:
     container_name: library_app
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      PORT: ${PORT:-3000}
+      PORT: ${PORT:-3001}
       POSTGRES_USER: ${POSTGRES_USER:-libraryuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-librarypassword}
       POSTGRES_DB: ${POSTGRES_DB:-library_db}
@@ -35,7 +35,7 @@ services:
       POSTGRES_PORT: 5432
       JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_here}
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,7 +45,7 @@ services:
     networks:
       - library-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
