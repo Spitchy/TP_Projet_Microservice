@@ -15,6 +15,7 @@ module.exports = {
     '/node_modules/',
     '/coverage/',
   ],
+  // thresholds intentionally low until more tests are added
   coverageThreshold: {
     global: {
       lines: 50,
