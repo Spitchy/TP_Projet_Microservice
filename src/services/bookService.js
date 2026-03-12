@@ -7,6 +7,7 @@ const { Op } = require('sequelize');
 const Livre = require('../models/Livre');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
+const { withDbMetrics, recordBookBorrowed, recordBookReturned } = require('../middlewares/metricsMiddleware');
 
 /**
  * Get all books with pagination and filtering
@@ -55,12 +56,14 @@ const getAllBooks = async (options = {}) => {
 
   logger.info('Fetching books with pagination', { page: pageNum, size: pageSize, sort: sortField, order: sortOrder });
 
-  const { count, rows } = await Livre.findAndCountAll({
-    where,
-    limit: pageSize,
-    offset,
-    order: [[sortField, sortOrder]],
-  });
+  const { count, rows } = await withDbMetrics('SELECT', 'livres', () =>
+    Livre.findAndCountAll({
+      where,
+      limit: pageSize,
+      offset,
+      order: [[sortField, sortOrder]],
+    })
+  );
 
   const totalPages = Math.ceil(count / pageSize);
 
@@ -92,7 +95,7 @@ const getBookById = async (id) => {
 
   logger.info('Fetching book by ID', { bookId });
 
-  const book = await Livre.findByPk(bookId);
+  const book = await withDbMetrics('SELECT', 'livres', () => Livre.findByPk(bookId));
 
   if (!book) {
     logger.warn('Book not found', { bookId });
@@ -133,7 +136,7 @@ const createBook = async (bookData) => {
   }
 
   // Check for duplicate ISBN
-  const existingBook = await Livre.findOne({ where: { isbn } });
+  const existingBook = await withDbMetrics('SELECT', 'livres', () => Livre.findOne({ where: { isbn } }));
   if (existingBook) {
     logger.warn('Duplicate ISBN attempted', { isbn });
     throw AppError.conflict(`Book with ISBN ${isbn} already exists`);
@@ -141,12 +144,14 @@ const createBook = async (bookData) => {
 
   logger.info('Creating new book', { titre, auteur, isbn });
 
-  const book = await Livre.create({
-    titre: titre.trim(),
-    auteur: auteur.trim(),
-    isbn: isbn.trim(),
-    disponibilite,
-  });
+  const book = await withDbMetrics('INSERT', 'livres', () =>
+    Livre.create({
+      titre: titre.trim(),
+      auteur: auteur.trim(),
+      isbn: isbn.trim(),
+      disponibilite,
+    })
+  );
 
   logger.info('Book created successfully', { bookId: book.id });
 
@@ -180,7 +185,7 @@ const updateBook = async (id, updateData) => {
       throw AppError.badRequest('ISBN must be 10 or 13 digits');
     }
 
-    const existingBook = await Livre.findOne({ where: { isbn } });
+    const existingBook = await withDbMetrics('SELECT', 'livres', () => Livre.findOne({ where: { isbn } }));
     if (existingBook && existingBook.id !== book.id) {
       throw AppError.conflict(`Book with ISBN ${isbn} already exists`);
     }
@@ -194,7 +199,7 @@ const updateBook = async (id, updateData) => {
   if (isbn !== undefined) book.isbn = isbn.trim();
   if (disponibilite !== undefined) book.disponibilite = disponibilite;
 
-  await book.save();
+  await withDbMetrics('UPDATE', 'livres', () => book.save());
 
   logger.info('Book updated successfully', { bookId: book.id });
 
@@ -213,7 +218,7 @@ const deleteBook = async (id) => {
   logger.info('Deleting book', { bookId: id });
 
   const bookData = book.toJSON();
-  await book.destroy();
+  await withDbMetrics('DELETE', 'livres', () => book.destroy());
 
   logger.info('Book deleted successfully', { bookId: id });
 
@@ -265,7 +270,8 @@ const borrowBook = async (id, userId) => {
   logger.info('Borrowing book', { bookId: id, userId });
 
   book.disponibilite = false;
-  await book.save();
+  await withDbMetrics('UPDATE', 'livres', () => book.save());
+  recordBookBorrowed();
 
   logger.info('Book borrowed successfully', { bookId: id, userId });
 
@@ -290,7 +296,8 @@ const returnBook = async (id, userId) => {
   logger.info('Returning book', { bookId: id, userId });
 
   book.disponibilite = true;
-  await book.save();
+  await withDbMetrics('UPDATE', 'livres', () => book.save());
+  recordBookReturned();
 
   logger.info('Book returned successfully', { bookId: id, userId });
 
