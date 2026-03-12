@@ -23,12 +23,12 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 3000
+# Expose port (default 3001, overridable via PORT env)
+EXPOSE ${PORT:-3001}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://127.0.0.1:${PORT:-3000}/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:${PORT:-3001}/health || exit 1
 
 # Use dumb-init to run Node
 ENTRYPOINT ["dumb-init", "--"]

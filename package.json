@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
     "pg": "^8.10.0",
+    "prom-client": "^15.1.0",
     "sequelize": "^6.33.0"
   },
   "devDependencies": {

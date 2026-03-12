@@ -1,6 +1,6 @@
 # Library Management Microservice
 
-A clean architecture Express.js microservice for managing a library system with PostgreSQL as the database. Built with best practices in mind.
+A production-ready Express.js microservice for managing a library system with PostgreSQL, full observability stack (Prometheus + Grafana), CI/CD, Kubernetes deployment, and performance testing.
 
 ## Features
 
@@ -9,88 +9,95 @@ A clean architecture Express.js microservice for managing a library system with 
 - 📖 Book borrowing and return functionality
 - 🔐 JWT-based authentication
 - 🏥 Health check endpoint
-- 📊 Prometheus metrics endpoint
+- 📊 Prometheus metrics & monitoring (Phase 6)
+- 📈 Grafana dashboards with 20 panels
+- 🚨 Prometheus alerting rules (6 alerts)
+- ⚡ k6 performance testing (100 req/s load tests)
 - 🐘 PostgreSQL 15 (Alpine) for data persistence
 - 📦 Docker & Docker Compose support
-- 📝 Structured logging with Morgan
+- ☸️ Kubernetes deployment manifests
+- 🔄 CI/CD pipeline configuration
+- 📝 Structured logging with Morgan & Winston
 - 🏗️ Clean Architecture pattern
+- 🧪 Unit & integration tests with Jest
 
 ## Technology Stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: PostgreSQL 15 (Alpine)
-- **ORM**: Sequelize
-- **Authentication**: JWT (jsonwebtoken)
-- **Logging**: Morgan
-- **Environment**: dotenv
-- **Dev Tools**: nodemon
+| Category | Technology |
+|----------|-----------|
+| **Runtime** | Node.js |
+| **Framework** | Express.js |
+| **Database** | PostgreSQL 15 (Alpine) |
+| **ORM** | Sequelize |
+| **Authentication** | JWT (jsonwebtoken) |
+| **Metrics** | prom-client (Prometheus) |
+| **Monitoring** | Prometheus + Grafana |
+| **Load Testing** | k6 |
+| **Logging** | Morgan + Winston |
+| **Testing** | Jest |
+| **Containerization** | Docker & Docker Compose |
+| **Orchestration** | Kubernetes (Kustomize) |
+| **Environment** | dotenv |
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js v14+ 
+- Node.js v14+
 - Docker & Docker Compose
 - npm or yarn
 
-### Installation & Setup
+### Option A: Development Mode
 
-1. **Navigate to project directory**:
-   ```bash
-   cd TP_Projet_Microservice
-   ```
+```bash
+cd TP_Projet_Microservice
+npm install
+docker-compose up -d          # Start PostgreSQL
+npm run dev                   # Start app with auto-reload
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+### Option B: Full Monitoring Stack (Recommended)
 
-3. **Start PostgreSQL**:
-   ```bash
-   docker-compose up -d
-   ```
+```bash
+cd TP_Projet_Microservice/monitoring
+docker-compose -f docker-compose.monitoring.yml up -d
+```
 
-   Verify container is running:
-   ```bash
-   docker ps
-   ```
+This starts **PostgreSQL + App + Prometheus + Grafana** together.
 
-4. **Configure environment**:
-   - Copy `.env.example` to `.env` (already included)
-   - Update variables if needed
+### Service URLs
 
-5. **Start the application**:
-   ```bash
-   npm start
-   ```
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Library API | http://localhost:3001 | — |
+| Health Check | http://localhost:3001/health | — |
+| Prometheus Metrics | http://localhost:3001/metrics | — |
+| Prometheus UI | http://localhost:9091 | — |
+| Grafana | http://localhost:3002 | admin / admin |
 
-   Or for development with auto-reload:
-   ```bash
-   npm run dev
-   ```
-
-6. **Verify it's running**:
-   ```bash
-   curl http://localhost:3000/health
-   ```
-   Expected response: `{ "status": "UP" }`
+> Ports are configurable via `.env` file. See `.env.example` for all port variables.
 
 ## API Endpoints
 
 ### Health & Metrics
-- `GET /health` - Health check endpoint
-- `GET /metrics` - Prometheus metrics endpoint
+- `GET /health` — Health check endpoint
+- `GET /metrics` — Prometheus metrics (prom-client format)
 
-### Book Management
-- `GET /api/books` - Get all books
-- `GET /api/books/:id` - Get book by ID
-- `GET /api/books/search/query` - Search books
-- `POST /api/books` - Create new book (protected)
-- `PUT /api/books/:id` - Update book (protected)
-- `DELETE /api/books/:id` - Delete book (protected)
-- `POST /api/books/:id/borrow` - Borrow a book (protected)
-- `POST /api/books/:id/return` - Return a book (protected)
+### Authentication (v1)
+- `POST /api/v1/auth/register` — Register a new user
+- `POST /api/v1/auth/login` — Login and receive JWT token
+
+### Book Management (v1)
+- `GET /api/v1/books` — Get all books
+- `GET /api/v1/books/:id` — Get book by ID
+- `GET /api/v1/books?search=term` — Search books
+- `POST /api/v1/books` — Create new book (protected)
+- `PUT /api/v1/books/:id` — Update book (protected)
+- `DELETE /api/v1/books/:id` — Delete book (protected)
+- `POST /api/v1/books/:id/borrow` — Borrow a book (protected)
+- `POST /api/v1/books/:id/return` — Return a book (protected)
+
+> Legacy routes (`/api/books`, `/api/auth`) are also supported for backward compatibility.
 
 ## Database Schema
 
@@ -132,28 +139,112 @@ updatedAt (TIMESTAMP)
 ```
 TP_Projet_Microservice/
 ├── src/
+│   ├── server.js                          # Express app + /metrics endpoint
 │   ├── config/
-│   │   └── database.js          # Sequelize configuration
+│   │   └── database.js                    # Sequelize configuration
 │   ├── controllers/
-│   │   └── bookController.js    # Book business logic
+│   │   ├── bookController.js              # Book business logic
+│   │   └── userController.js              # User/auth logic
 │   ├── middlewares/
-│   │   ├── authMiddleware.js    # JWT verification
-│   │   └── errorMiddleware.js   # Global error handling
+│   │   ├── authMiddleware.js              # JWT verification
+│   │   ├── errorMiddleware.js             # Global error handling
+│   │   └── metricsMiddleware.js           # Prometheus metrics collection
 │   ├── models/
-│   │   ├── User.js              # User model
-│   │   ├── Livre.js             # Book model
-│   │   └── Emprunt.js           # Borrow record model
+│   │   ├── User.js                        # User model
+│   │   └── Livre.js                       # Book model
 │   ├── routes/
-│   │   └── bookRoutes.js        # API routes
-│   ├── services/                # Business logic layer (empty)
-│   ├── utils/                   # Utility functions (empty)
-│   └── server.js                # Express app entry point
-├── .env                         # Environment variables
-├── .env.example                 # Environment template
-├── docker-compose.yml           # Docker Compose configuration
-├── package.json                 # Dependencies & scripts
-└── README.md                    # This file
+│   │   ├── authRoutes.js                  # Auth endpoints
+│   │   └── bookRoutes.js                  # Book endpoints
+│   ├── services/
+│   │   └── bookService.js                 # Book business logic layer
+│   └── utils/
+│       ├── AppError.js                    # Custom error class
+│       ├── logger.js                      # Winston logger
+│       ├── responseHelper.js              # Response formatting
+│       └── seed.js                        # Database seeding
+├── monitoring/
+│   ├── docker-compose.monitoring.yml      # Full stack (App + Prometheus + Grafana)
+│   ├── prometheus/
+│   │   ├── prometheus.yml                 # Scrape configuration
+│   │   └── alerts.yml                     # 6 alert rules
+│   ├── grafana/
+│   │   ├── dashboards/
+│   │   │   └── library-dashboard.json     # Pre-built dashboard (20 panels)
+│   │   └── provisioning/
+│   │       ├── datasources/
+│   │       │   └── datasources.yml        # Auto-configure Prometheus
+│   │       └── dashboards/
+│   │           └── dashboards.yml         # Auto-load dashboards
+│   └── alertmanager/
+│       └── alertmanager.yml               # Alert routing
+├── tests/
+│   └── load-test.js                       # k6 performance test (100 req/s)
+├── src/__tests__/
+│   ├── auth.test.js                       # Auth unit tests
+│   ├── bookService.test.js                # Service unit tests
+│   └── server.test.js                     # Server unit tests
+├── k8s/                                   # Kubernetes manifests
+├── docker-compose.yml                     # Development (PostgreSQL only)
+├── Dockerfile                             # Multi-stage Docker build
+├── jest.config.js                         # Test configuration
+└── package.json
 ```
+
+## Phase 6 — Monitoring & Performance
+
+### Prometheus Metrics
+
+The service exposes metrics at `/metrics` using `prom-client`:
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `http_requests_total` | Counter | method, endpoint, status | Total HTTP requests |
+| `http_request_duration_seconds` | Histogram | method, endpoint | Request latency |
+| `books_borrowed_total` | Counter | — | Business metric: books borrowed |
+| `db_query_duration_seconds` | Histogram | operation, table | Database query time |
+
+Additional metrics: `books_returned_total`, `books_currently_borrowed`, `db_query_errors_total`, plus Node.js default metrics (CPU, memory, event loop, GC).
+
+### Prometheus Configuration
+
+- Scrape targets: `library-api` (app:3001), `node-exporter` (9100), `postgres-exporter` (9187)
+- Scrape interval: 10s for app, 15s global
+- 6 alert rules loaded from `alerts.yml`
+
+### Alert Rules
+
+| Alert | Condition | Severity |
+|-------|-----------|----------|
+| HighErrorRate | Error rate > 5% for 2 min | Critical |
+| HighLatency | P99 > 500ms for 2 min | Warning |
+| LibraryApiDown | Service down for 1 min | Critical |
+| HighMemoryUsage | Memory > 80% for 5 min | Warning |
+| HighDatabaseLatency | DB P95 > 100ms for 5 min | Warning |
+| NoTraffic | No requests for 10 min | Warning |
+
+### Grafana Dashboard
+
+Auto-provisioned dashboard with 20 panels across 4 sections:
+
+- **Overview**: Service Status, RPS, Error Rate, Books Borrowed, Uptime
+- **HTTP Metrics**: Request Rate by Endpoint, Latency (P50/P95/P99), Status Codes, Methods
+- **Database**: Query Latency P95, DB Errors by Operation
+- **System**: Memory Usage, CPU Usage, Event Loop Lag, Active Handles
+
+### Performance Testing (k6)
+
+```powershell
+# Using Docker (no install needed)
+docker run --rm -i --network=monitoring_monitoring-network grafana/k6 run - < tests/load-test.js
+
+# Or install k6 locally
+k6 run tests/load-test.js
+```
+
+- **Load**: 100 requests/second (constant arrival rate)
+- **Duration**: 2 minutes
+- **Endpoints**: /health, /api/v1/books, /api/v1/books/:id, /metrics, search, auth
+- **Thresholds**: P50 < 100ms, P95 < 300ms, P99 < 500ms, error rate < 1%
 
 ## Environment Variables
 
@@ -163,44 +254,42 @@ POSTGRES_USER=libraryuser
 POSTGRES_PASSWORD=librarypassword
 POSTGRES_DB=library_db
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5433
 
 # Application
 NODE_ENV=development
-PORT=3000
+PORT=3001
 
 # JWT Secret
 JWT_SECRET=your_jwt_secret_key_here_change_in_production
 
 # Logging
 LOG_LEVEL=info
+
+# Service Ports (host-side, change if occupied)
+POSTGRES_HOST_PORT=5433
+APP_HOST_PORT=3001
+PROMETHEUS_HOST_PORT=9091
+GRAFANA_HOST_PORT=3002
+NODE_EXPORTER_HOST_PORT=9101
+ALERTMANAGER_HOST_PORT=9093
 ```
 
 ## Docker Commands
 
-**Start services**:
+**Development (PostgreSQL only)**:
 ```bash
 docker-compose up -d
-```
-
-**View logs**:
-```bash
-docker-compose logs -f postgres
-```
-
-**Stop services** (keep volumes):
-```bash
-docker-compose stop
-```
-
-**Stop and remove everything**:
-```bash
 docker-compose down
 ```
 
-**Stop and remove data**:
+**Full Monitoring Stack**:
 ```bash
-docker-compose down -v
+cd monitoring
+docker-compose -f docker-compose.monitoring.yml up -d    # Start everything
+docker-compose -f docker-compose.monitoring.yml down      # Stop
+docker-compose -f docker-compose.monitoring.yml down -v   # Stop + remove data
+docker-compose -f docker-compose.monitoring.yml logs app  # View app logs
 ```
 
 ## npm Scripts
@@ -208,37 +297,39 @@ docker-compose down -v
 ```bash
 npm start       # Run production server
 npm run dev     # Run with nodemon (auto-reload)
-npm test        # Run tests (not implemented)
+npm test        # Run Jest unit tests
 ```
 
-## Testing the API
+## Testing
 
-### Health Check
+### Unit Tests
 ```bash
-curl http://localhost:3000/health
+npm test
 ```
 
-### Get All Books
+### API Testing
 ```bash
-curl http://localhost:3000/api/books
+curl http://localhost:3001/health
+curl http://localhost:3001/api/v1/books
+curl http://localhost:3001/metrics
 ```
 
-### Get Metrics
+### Load Testing
 ```bash
-curl http://localhost:3000/metrics
+k6 run tests/load-test.js
 ```
 
 ## Database Connection
 
 - **Host**: localhost
-- **Port**: 5432
+- **Port**: 5433 (configurable via `POSTGRES_HOST_PORT` in `.env`)
 - **User**: libraryuser
 - **Password**: librarypassword
 - **Database**: library_db
 
 To connect via psql:
 ```bash
-psql -h localhost -U libraryuser -d library_db
+psql -h localhost -p 5433 -U libraryuser -d library_db
 ```
 
 ## Architecture Notes
@@ -246,52 +337,44 @@ psql -h localhost -U libraryuser -d library_db
 This project follows **Clean Architecture** principles:
 
 1. **Separation of Concerns**: Controllers, services, models, and routes are separated
-2. **Middleware Layer**: Authentication and error handling are decoupled
+2. **Middleware Layer**: Authentication, error handling, and metrics collection are decoupled
 3. **Configuration**: Environment-based configuration via .env
-4. **Scalability**: Easy to add new features without affecting existing code
-5. **Testability**: Business logic is separated from HTTP layer
+4. **Observability**: Full monitoring stack with Prometheus metrics, Grafana dashboards, and alerting
+5. **Scalability**: Kubernetes-ready with HPA and load testing
+6. **Testability**: Business logic separated from HTTP layer, Jest unit tests
+7. **CI/CD**: Automated pipeline configuration
 
-## Next Steps
+## Documentation
 
-1. Implement service layer methods
-2. Add input validation middleware
-3. Implement authentication endpoints (login/register)
-4. Add comprehensive error handling
-5. Write unit and integration tests
-6. Add API documentation (Swagger/OpenAPI)
-7. Implement request/response logging
-8. Add database migrations
-9. Deploy to production environment
-10. Set up CI/CD pipeline
+| Document | Description |
+|----------|-------------|
+| [PHASE6_GUIDE.md](../PHASE6_GUIDE.md) | Monitoring & Performance step-by-step guide |
+| [CI_CD_SETUP.md](CI_CD_SETUP.md) | CI/CD pipeline setup |
+| [KUBERNETES_GUIDE.md](KUBERNETES_GUIDE.md) | Kubernetes deployment guide |
+| [POSTMAN_TESTING.md](POSTMAN_TESTING.md) | API testing with Postman |
+| [K8S_QUICKSTART.md](K8S_QUICKSTART.md) | Kubernetes quick start |
 
 ## Troubleshooting
 
 ### PostgreSQL connection refused
 - Ensure Docker container is running: `docker ps`
-- Check PostgreSQL is accessible: `docker logs library_postgres_db`
+- Check PostgreSQL logs: `docker logs library_postgres_db`
 - Verify `.env` contains correct credentials
 
 ### Port already in use
-- Check if port 3000 is available: `netstat -ano | findstr :3000` (Windows)
+- Check port: `netstat -ano | findstr :3001` (Windows)
 - Change PORT in `.env` if needed
 
-### Models not syncing
-- Ensure PostgreSQL is running and accessible
-- Check database credentials in `.env`
-- Verify logs in console for detailed error messages
+### Prometheus not scraping
+- Visit http://localhost:9091/targets
+- Check `library-api` target shows "UP"
+- Verify app container is running
 
-## Contributing
-
-This is a learning project. Feel free to expand and improve!
+### Grafana dashboard empty
+- Generate traffic first (hit the API endpoints)
+- Check time range is "Last 15 minutes"
+- Verify Prometheus datasource: Settings → Data Sources → Test
 
 ## License
 
 ISC
-
-## Support
-
-For issues or questions, check the logs and ensure:
-1. Docker container is running
-2. Environment variables are set correctly
-3. Node.js and npm are updated
-4. Database migrations (if any) are applied

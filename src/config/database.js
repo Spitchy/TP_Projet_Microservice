@@ -7,7 +7,7 @@ const sequelize = new Sequelize(
   process.env.POSTGRES_PASSWORD || 'librarypassword',
   {
     host: process.env.POSTGRES_HOST || 'localhost',
-    port: process.env.POSTGRES_PORT || 5432,
+    port: process.env.POSTGRES_PORT || 5433,
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
   }

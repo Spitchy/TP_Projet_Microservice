@@ -1,0 +1,103 @@
+# Prometheus Alert Rules for Library Management Microservice
+# Phase 6 - Monitoring & Performance
+
+groups:
+  - name: library-api-alerts
+    rules:
+      # ==========================================================================
+      # Alert 1: High Error Rate (> 5%)
+      # ==========================================================================
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) 
+            / 
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: library-api
+        annotations:
+          summary: "High error rate detected on Library API"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.example.com/runbooks/high-error-rate"
+
+      # ==========================================================================
+      # Alert 2: High Latency (P99 > 500ms)
+      # ==========================================================================
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: library-api
+        annotations:
+          summary: "High latency detected on Library API"
+          description: "P99 latency is {{ $value | humanizeDuration }} (threshold: 500ms)"
+          runbook_url: "https://docs.example.com/runbooks/high-latency"
+
+      # ==========================================================================
+      # Alert 3: Service Down
+      # ==========================================================================
+      - alert: LibraryApiDown
+        expr: up{job="library-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: library-api
+        annotations:
+          summary: "Library API is down"
+          description: "Library API instance {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.example.com/runbooks/service-down"
+
+      # ==========================================================================
+      # Alert 4: High Memory Usage (> 80%)
+      # ==========================================================================
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{job="library-api"} 
+            / 
+            (1024 * 1024 * 512)
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: library-api
+        annotations:
+          summary: "High memory usage on Library API"
+          description: "Memory usage is above 80% of allocated limit"
+
+      # ==========================================================================
+      # Alert 5: Database Query Latency High
+      # ==========================================================================
+      - alert: HighDatabaseLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(db_query_duration_seconds_bucket[5m])) by (le, operation)
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: library-api
+        annotations:
+          summary: "High database query latency"
+          description: "P95 database query latency for {{ $labels.operation }} is {{ $value | humanizeDuration }}"
+
+      # ==========================================================================
+      # Alert 6: No Requests (Service might be unreachable)
+      # ==========================================================================
+      - alert: NoTraffic
+        expr: |
+          sum(rate(http_requests_total{job="library-api"}[5m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: library-api
+        annotations:
+          summary: "No traffic to Library API"
+          description: "Library API has received no requests in the last 10 minutes"

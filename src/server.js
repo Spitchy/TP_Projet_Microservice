@@ -6,16 +6,20 @@ const sequelize = require('./config/database');
 const bookRoutes = require('./routes/bookRoutes');
 const authRoutes = require('./routes/authRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
+const { register, metricsMiddleware } = require('./middlewares/metricsMiddleware');
 const seedDatabase = require('./utils/seed');
 const logger = require('./utils/logger');
 const { successResponse } = require('./utils/responseHelper');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Prometheus metrics middleware
+app.use(metricsMiddleware);
 
 // Structured JSON logging for HTTP requests in production
 if (process.env.NODE_ENV === 'production') {
@@ -36,16 +40,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Metrics Endpoint (Prometheus)
-app.get('/metrics', (req, res) => {
-  return successResponse(res, {
-    data: {
-      uptime: process.uptime(),
-      memoryUsage: process.memoryUsage(),
-      cpuUsage: process.cpuUsage(),
-    },
-    message: 'Metrics retrieved successfully',
-  });
+// Metrics Endpoint (Prometheus format)
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (error) {
+    logger.error('Error generating metrics', { error: error.message });
+    res.status(500).end(error.message);
+  }
 });
 
 // API Routes v1
